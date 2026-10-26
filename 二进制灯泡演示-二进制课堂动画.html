@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>二进制灯泡演示 · 高中信息技术</title>
+<style>
+:root{
+  --bg:#0b1220; --panel:#141d31; --panel2:#1b2740; --line:#2a3854;
+  --txt:#e8eef9; --dim:#9aa8c0; --accent:#38bdf8; --ok:#34d399;
+  --warn:#fbbf24; --err:#f87171; --glow:.55;
+}
+body[data-theme="light"]{
+  --bg:#f1f5f9; --panel:#ffffff; --panel2:#f8fafc; --line:#cbd5e1;
+  --txt:#0f172a; --dim:#475569; --accent:#0369a1; --ok:#15803d;
+  --warn:#b45309; --err:#b91c1c; --glow:.22;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg); color:var(--txt);
+  font-family:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif;
+  font-size:17px; line-height:1.6; padding:16px 18px 40px;
+}
+main{max-width:1400px;margin:0 auto;}
+
+/* 顶栏 */
+.topbar{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+  flex-wrap:wrap;margin-bottom:14px;}
+h1{font-size:30px;margin:0;letter-spacing:1px;}
+.sub{margin:6px 0 0;color:var(--dim);font-size:16px;}
+.topbtns{display:flex;gap:10px;}
+
+/* 通用面板 */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:16px 18px;margin-bottom:14px;}
+.panel h2{font-size:19px;margin:0 0 12px;color:var(--accent);
+  border-left:4px solid var(--accent);padding-left:10px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media (max-width:980px){.grid2{grid-template-columns:1fr;}}
+
+/* 灯泡舞台 */
+.stage{padding:20px 18px 16px;}
+.stage-tip{text-align:center;font-size:21px;font-weight:800;color:var(--warn);
+  min-height:34px;margin-bottom:8px;padding:6px 10px;border-radius:10px;
+  background:rgba(251,191,36,.10);transition:.2s;}
+.bulbs{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;
+  padding:14px 6px 6px;}
+.bit{width:104px;display:flex;flex-direction:column;align-items:center;
+  padding:8px 4px 6px;border-radius:12px;cursor:pointer;
+  border:2px solid transparent;transition:background .2s,border-color .2s,transform .15s;}
+.bit:hover{background:var(--panel2);transform:translateY(-3px);}
+.bit.flash{animation:flash .45s ease;}
+@keyframes flash{
+  0%{background:rgba(56,189,248,.35);border-color:var(--accent);transform:scale(1.06);}
+  100%{background:transparent;border-color:transparent;transform:scale(1);}
+}
+.pow{font-size:15px;color:var(--dim);font-weight:600;margin-bottom:4px;}
+.pow sup{font-size:11px;}
+.lamp{display:flex;flex-direction:column;align-items:center;}
+.bulb{width:78px;height:78px;border-radius:50%;position:relative;
+  background:radial-gradient(circle at 34% 28%,#5b6577,#2b3547 62%,#1a2130);
+  border:3px solid #45536b;
+  box-shadow:inset 0 0 14px rgba(0,0,0,.6);
+  transition:background .2s,box-shadow .2s,border-color .2s;}
+.bulb::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-58%);
+  width:24px;height:14px;border:3px solid #8b96a8;border-bottom:none;
+  border-radius:14px 14px 0 0;transition:border-color .2s,box-shadow .2s;}
+.base{width:34px;height:20px;margin-top:-4px;border-radius:0 0 7px 7px;
+  background:linear-gradient(#8b96a8,#4b5563);position:relative;}
+.base::after{content:"";position:absolute;left:6px;right:6px;top:6px;height:2px;
+  background:rgba(0,0,0,.28);box-shadow:0 4px 0 rgba(0,0,0,.28);}
+.bit.on .bulb{
+  background:radial-gradient(circle at 34% 28%,#fffdf0,#fde68a 42%,#f59e0b 74%,#b45309);
+  border-color:#fef3c7;
+  box-shadow:0 0 26px 6px rgba(250,204,21,calc(.55*var(--glow))),
+             0 0 56px 14px rgba(250,204,21,calc(.25*var(--glow))),
+             inset 0 0 14px rgba(255,255,255,.75);}
+.bit.on .bulb::before{border-color:#7c2d12;box-shadow:0 0 10px #fde68a;}
+.bval{margin-top:8px;font-size:30px;font-weight:800;letter-spacing:1px;
+  color:var(--dim);transition:color .2s;}
+.bit.on .bval{color:#fbbf24;}
+.wt{font-size:15px;color:var(--accent);font-weight:700;}
+.idx{font-size:12px;color:var(--dim);}
+
+/* 读数条 */
+.readout{display:flex;justify-content:center;gap:40px;flex-wrap:wrap;
+  margin:18px 0 8px;padding:14px;border-radius:12px;background:var(--panel2);
+  border:1px solid var(--line);}
+.ro-item{display:flex;align-items:baseline;gap:12px;}
+.ro-label{font-size:16px;color:var(--dim);}
+.ro-value{font-size:40px;font-weight:800;font-family:Consolas,Menlo,monospace;letter-spacing:3px;}
+.ro-value.bin{color:var(--accent);}
+.ro-value.dec{color:var(--ok);}
+.expand{text-align:center;font-size:19px;font-family:Consolas,Menlo,monospace;
+  color:var(--warn);min-height:30px;word-break:break-all;padding:0 6px;}
+
+/* 按钮 */
+button{font-family:inherit;font-size:16px;padding:9px 16px;border-radius:9px;
+  border:1px solid var(--line);background:var(--panel2);color:var(--txt);
+  cursor:pointer;transition:.15s;font-weight:600;}
+button:hover{background:var(--accent);color:#04121f;border-color:var(--accent);}
+button:active{transform:translateY(1px);}
+button.primary{background:var(--accent);color:#04121f;border-color:var(--accent);}
+button.ghost{background:transparent;}
+button.on{background:var(--ok);color:#04121f;border-color:var(--ok);}
+.ctrls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+.speed{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:15px;}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;}
+.seg button{border:none;border-radius:0;padding:7px 14px;}
+.seg button.on{background:var(--accent);color:#04121f;}
+.hint{margin-top:10px;font-size:14px;color:var(--dim);}
+input[type=number],input[type=text]{font-family:Consolas,Menlo,monospace;font-size:19px;
+  padding:9px 12px;border-radius:9px;border:1px solid var(--line);
+  background:var(--panel2);color:var(--txt);width:170px;}
+input:focus{outline:2px solid var(--accent);}
+
+/* 日志 */
+.log{height:210px;overflow-y:auto;background:var(--panel2);border:1px solid var(--line);
+  border-radius:10px;padding:10px 12px;font-size:16px;font-family:Consolas,Menlo,monospace;}
+.log div{padding:3px 0;border-bottom:1px dashed rgba(128,140,160,.18);}
+.log .info{color:var(--dim);}
+.log .carry{color:var(--warn);}
+.log .done{color:var(--accent);}
+.log .ok{color:var(--ok);font-weight:700;}
+.log .err{color:var(--err);font-weight:700;}
+
+/* 除2取余 */
+.conv{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;}
+.tip{color:var(--dim);font-size:14px;}
+.divTable{display:flex;gap:26px;flex-wrap:wrap;min-height:150px;
+  background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;}
+.drow{font-family:Consolas,Menlo,monospace;font-size:18px;padding:2px 0;}
+.drow .a{color:var(--txt);font-weight:700;}
+.drow .r{color:var(--warn);font-weight:800;font-size:20px;}
+.dhead{font-size:14px;color:var(--dim);margin-bottom:6px;}
+.rstack{display:flex;flex-direction:column-reverse;gap:2px;align-items:center;}
+.rstack span{font-family:Consolas,Menlo,monospace;font-size:20px;font-weight:800;
+  color:var(--warn);background:rgba(251,191,36,.14);border-radius:6px;
+  padding:0 8px;min-width:34px;text-align:center;}
+.resultLine{margin-top:8px;font-size:18px;color:var(--ok);font-weight:700;
+  font-family:Consolas,Menlo,monospace;}
+
+/* 要点 */
+.points{margin:0;padding-left:20px;}
+.points li{margin-bottom:8px;font-size:16px;}
+.points b{color:var(--warn);}
+.say{background:var(--panel2);border-left:4px solid var(--warn);border-radius:0 8px 8px 0;
+  padding:10px 12px;font-size:16px;color:var(--dim);margin-top:10px;}
+.say b{color:var(--txt);}
+
+/* 练习 */
+.q-text{font-size:20px;font-weight:700;margin-bottom:10px;}
+.q-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.q-fb{margin-top:10px;font-size:17px;font-weight:700;min-height:28px;}
+.q-fb.ok{color:var(--ok);} .q-fb.no{color:var(--err);}
+.q-ana{font-size:15px;color:var(--dim);margin-top:4px;}
+</style>
+</head>
+<body data-theme="dark">
+<header class="topbar">
+  <div>
+    <h1>二进制灯泡演示 · 8 位（1 字节）</h1>
+    <p class="sub">亮 = 1，灭 = 0　｜　逢二进一　｜　位权与进制转换　｜　高中信息技术</p>
+  </div>
+  <div class="topbtns">
+    <button id="btnTheme" class="ghost">◐ 白底模式</button>
+    <button id="btnFull" class="ghost">⛶ 全屏投影</button>
+  </div>
+</header>
+
+<main>
+  <!-- 舞台 -->
+  <section class="panel stage">
+    <div class="stage-tip" id="stageTip">准备开始……</div>
+    <div class="bulbs" id="bulbs"></div>
+    <div class="readout">
+      <div class="ro-item"><span class="ro-label">二进制 ( )₂</span><span class="ro-value bin" id="binOut">00000000</span></div>
+      <div class="ro-item"><span class="ro-label">十进制 ( )₁₀</span><span class="ro-value dec" id="decOut">0</span></div>
+    </div>
+    <div class="expand" id="expandOut">0</div>
+  </section>
+
+  <section class="grid2">
+    <!-- 控制 -->
+    <div class="panel">
+      <h2>控制台</h2>
+      <div class="ctrls">
+        <button class="primary" id="btnDemo">▶ 一键课堂演示（自动跑完全流程）</button>
+        <button id="btnPlus">＋1 进位演示</button>
+        <button id="btnMinus">－1 借位演示</button>
+        <button id="btnAuto">▶ 自动计数</button>
+        <button id="btnZero">清零</button>
+        <button id="btnMax">全亮 255</button>
+        <button id="btnRand">随机</button>
+      </div>
+      <div class="speed">
+        演示速度：
+        <span class="seg">
+          <button data-sp="900">慢</button>
+          <button data-sp="450" class="on">中</button>
+          <button data-sp="180">快</button>
+        </span>
+        <span style="font-size:14px">（点击任意灯泡可直接翻转该位）</span>
+      </div>
+      <div class="hint">键盘快捷键：空格 / → 加一　·　← 减一　·　0 清零　·　A 自动计数</div>
+    </div>
+    <!-- 日志 -->
+    <div class="panel">
+      <h2>运算过程（逢二进一 / 借一当二）</h2>
+      <div class="log" id="log"><div class="info">点击「＋1 进位演示」开始，观察进位如何从最低位向左传递。</div></div>
+    </div>
+  </section>
+
+  <!-- 转换 -->
+  <section class="panel">
+    <h2>十进制 → 二进制（除 2 取余，倒序读数）</h2>
+    <div class="conv">
+      <input type="number" id="decInput" min="0" max="255" value="200">
+      <button class="primary" id="btnConv">演示转换</button>
+      <button id="btnFast">直接点亮</button>
+      <span class="tip">输入范围 0 – 255（超过 255 需要更多位）</span>
+    </div>
+    <div class="divTable" id="divTable"></div>
+  </section>
+
+  <section class="grid2">
+    <div class="panel">
+      <h2>讲解要点</h2>
+      <ol class="points">
+        <li><b>位权</b>：从右往左第 n 位的位权是 2<sup>n-1</sup>，8 位依次为 1、2、4、8、16、32、64、128，相邻位相差 2 倍。</li>
+        <li><b>逢二进一</b>：某位 1＋1＝10₂，本位变 0，向高位进 1；进位可能连续向左传递。</li>
+        <li><b>二 → 十（按权展开相加）</b>：把值为 1 的位权相加，如 11001000₂＝128＋64＋8＝200。</li>
+        <li><b>十 → 二（除 2 取余）</b>：反复除以 2 取余数，直到商为 0，<b>余数倒序（从下往上）排列</b>。</li>
+        <li><b>表示范围</b>：8 位共 2⁸＝256 种状态，表示 0 – 255；255＋1 会产生<b>溢出</b>。</li>
+      </ol>
+      <div class="say">教师话术示例：<b>“把灯泡想成开关，8 个开关就是 1 个字节。最右边是‘个位’，每往左一位‘含金量’翻倍。</b>当某一位要装下 2 时，它装不下，只能写 0 并向左边进 1——这就是逢二进一。”</div>
+    </div>
+    <div class="panel">
+      <h2>随堂小练</h2>
+      <div class="q-text" id="qText">点击「换一题」开始练习</div>
+      <div class="q-row">
+        <input type="text" id="qInput" placeholder="输入答案">
+        <button class="primary" id="qCheck">检查</button>
+        <button id="qNext">换一题</button>
+        <button id="qAns">看答案</button>
+      </div>
+      <div class="q-fb" id="qFb"></div>
+      <div class="q-ana" id="qAna"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+/* ============ 状态 ============ */
+var bits = [0,0,0,0,0,0,0,0];   // bits[0] 为最低位（最右）
+var speed = 450;
+var busy = false;
+var auto = false;
+var bitEls = [];
+
+var $ = function(id){ return document.getElementById(id); };
+var sleep = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
+var clearEl = function(el){ el.innerHTML = ''; };
+
+/* ============ 生成灯泡 ============ */
+(function build(){
+  var wrap = $('bulbs');
+  for(var p = 7; p >= 0; p--){
+    var d = document.createElement('div');
+    d.className = 'bit';
+    d.dataset.pow = p;
+    d.innerHTML =
+      '<div class="pow">2<sup>' + p + '</sup></div>' +
+      '<div class="lamp"><div class="bulb"></div><div class="base"></div></div>' +
+      '<div class="bval">0</div>' +
+      '<div class="wt">' + (1 << p) + '</div>' +
+      '<div class="idx">第 ' + p + ' 位</div>';
+    (function(pow){
+      d.addEventListener('click', function(){
+        stopAll();
+        bits[pow] = bits[pow] ? 0 : 1;
+        logClear();
+        logAdd('手动翻转第 ' + pow + ' 位（位权 ' + (1 << pow) + '）→ ' + bits[pow], 'info');
+        logAdd('结果：' + binStr() + '₂ = ' + value() + '₁₀', 'ok');
+        render();
+      });
+    })(p);
+    wrap.appendChild(d);
+    bitEls[p] = d;
+  }
+})();
+
+/* ============ 计算与渲染 ============ */
+function value(){
+  var v = 0;
+  for(var i = 0; i < 8; i++) if(bits[i]) v += (1 << i);
+  return v;
+}
+function binStr(){
+  var s = '';
+  for(var i = 7; i >= 0; i--) s += bits[i];
+  return s;
+}
+function binGroup(){
+  var s = binStr();
+  return s.slice(0,4) + ' ' + s.slice(4);
+}
+function expandText(){
+  var terms = [];
+  for(var i = 7; i >= 0; i--) if(bits[i]) terms.push('1×' + (1 << i));
+  return terms.length ? terms.join(' + ') + ' = ' + value() : '所有位均为 0 → 十进制 0';
+}
+function render(){
+  for(var i = 0; i < 8; i++){
+    var el = bitEls[i];
+    el.classList.toggle('on', bits[i] === 1);
+    el.querySelector('.bval').textContent = bits[i];
+  }
+  $('binOut').textContent = binGroup();
+  $('decOut').textContent = value();
+  $('expandOut').textContent = '按权展开：' + expandText();
+}
+
+/* ============ 日志 ============ */
+function logClear(){ clearEl($('log')); }
+function logAdd(text, type){
+  var box = $('log');
+  var d = document.createElement('div');
+  d.className = type || 'info';
+  d.textContent = text;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+}
+
+/* ============ ＋1：逢二进一 ============ */
+async function doPlus(){
+  if(busy) return;
+  busy = true;
+  logClear();
+  var start = value();
+  logAdd('起始：' + binStr() + '₂ = ' + start + '₁₀，执行 ＋1', 'info');
+  var i = 0, carry = 1;
+  while(i < 8 && carry === 1){
+    var el = bitEls[i];
+    el.classList.add('flash');
+    await sleep(speed * 0.5);
+    if(bits[i] === 1){
+      bits[i] = 0;
+      logAdd('第 ' + i + ' 位：1 + 1 = 10₂（即 2），本位写 0，向高位进 1 →', 'carry');
+    }else{
+      bits[i] = 1; carry = 0;
+      logAdd('第 ' + i + ' 位：0 + 1 = 1，本位写 1，进位结束。', 'done');
+    }
+    render();
+    await sleep(speed * 0.7);
+    el.classList.remove('flash');
+    i++;
+  }
+  if(carry === 1){
+    logAdd('最高位仍有进位 → 8 位已装满（255），发生溢出！结果回到 00000000', 'err');
+  }else{
+    logAdd('结果：' + binStr() + '₂ = ' + value() + '₁₀', 'ok');
+  }
+  busy = false;
+}
+
+/* ============ －1：借一当二 ============ */
+async function doMinus(){
+  if(busy) return;
+  busy = true;
+  logClear();
+  logAdd('起始：' + binStr() + '₂ = ' + value() + '₁₀，执行 －1', 'info');
+  var i = 0, borrow = 1;
+  while(i < 8 && borrow === 1){
+    var el = bitEls[i];
+    el.classList.add('flash');
+    await sleep(speed * 0.5);
+    if(bits[i] === 1){
+      bits[i] = 0; borrow = 0;
+      logAdd('第 ' + i + ' 位：1 - 1 = 0，本位写 0，借位结束。', 'done');
+    }else{
+      bits[i] = 1;
+      logAdd('第 ' + i + ' 位：0 - 1 不够，向高位借 1 当 2，2 - 1 = 1，本位写 1 →', 'carry');
+    }
+    render();
+    await sleep(speed * 0.7);
+    el.classList.remove('flash');
+    i++;
+  }
+  if(borrow === 1){
+    logAdd('0 已是最小值，无符号 8 位无法表示 -1（下溢）。', 'err');
+    for(var k = 0; k < 8; k++) bits[k] = 0;
+    render();
+  }else{
+    logAdd('结果：' + binStr() + '₂ = ' + value() + '₁₀', 'ok');
+  }
+  busy = false;
+}
+
+/* ============ 直接赋值 ============ */
+function setVal(n){
+  n = Math.max(0, Math.min(255, n | 0));
+  for(var i = 0; i < 8; i++) bits[i] = (n >> i) & 1;
+  render();
+}
+
+/* ============ 自动计数 ============ */
+async function autoRun(){
+  while(auto){
+    if(busy){ await sleep(120); continue; }
+    await doPlus();
+    await sleep(speed * 0.5);
+  }
+}
+function stopAuto(){
+  auto = false;
+  $('btnAuto').textContent = '▶ 自动计数';
+  $('btnAuto').classList.remove('on');
+}
+/* 中断一切自动行为：老师点任意按钮即可接管 */
+var demoToken = 0;
+function setTip(t){ $('stageTip').textContent = t || '— 手动模式：点灯泡翻转，或点 ＋1 / －1 —'; }
+function stopAll(){
+  stopAuto();
+  demoToken++;
+  setTip('');
+}
+
+/* ============ 一键课堂演示：0→1→2 进位、55→56 进位链、连续计数、255 溢出 ============ */
+async function classDemo(){
+  var my = ++demoToken;
+  stopAuto();
+  var oldSpeed = speed;
+  var steps = [
+    { tip:'第 1 幕：从 0 开始连加 4 次 1 —— 看最低位如何“满 2 进 1”', prep:0,  times:4, sp:900 },
+    { tip:'第 2 幕：跳到 55（0011 0111），加 1 时进位要连续穿过 3 位！', prep:55, times:1, sp:900 },
+    { tip:'第 3 幕：连续自动计数，看 8 个灯泡怎样“跑”起来',           prep:0,  times:8, sp:260 },
+    { tip:'第 4 幕：全亮 = 255（8 位最大值），再加 1 会发生溢出！',    prep:255,times:1, sp:900 }
+  ];
+  for(var s = 0; s < steps.length; s++){
+    if(my !== demoToken) return;
+    var st = steps[s];
+    speed = st.sp;
+    setTip(st.tip);
+    if(st.prep !== null){ setVal(st.prep); await sleep(900); }
+    for(var i = 0; i < st.times; i++){
+      if(my !== demoToken){ speed = oldSpeed; return; }
+      await doPlus();
+      await sleep(st.sp * 0.4);
+    }
+  }
+  speed = oldSpeed;
+  if(my === demoToken) setTip('演示完毕 ✅ 现在可以点任意灯泡手动翻转，或在下方做转换练习');
+}
+
+/* ============ 转换演示 ============ */
+async function convertDemo(fast){
+  stopAll();
+  var n = parseInt($('decInput').value, 10);
+  var table = $('divTable');
+  clearEl(table);
+  if(isNaN(n) || n < 0 || n > 255){
+    table.innerHTML = '<div style="color:var(--err);font-size:17px">请输入 0 – 255 之间的整数。</div>';
+    return;
+  }
+  logClear();
+  logAdd('十进制 ' + n + ' → 二进制（除 2 取余法）', 'info');
+
+  var rows = [], t = n, rems = [];
+  if(n === 0){ rows.push([0,0,0]); rems.push(0); }
+  while(t > 0){
+    rows.push([t, Math.floor(t / 2), t % 2]);
+    rems.push(t % 2);
+    t = Math.floor(t / 2);
+  }
+  var res = [];                       // res[i] 为第 i 位（0 最低）
+  for(var i = 0; i < 8; i++) res[i] = (n >> i) & 1;
+
+  var left = document.createElement('div');
+  var right = document.createElement('div');
+  table.appendChild(left); table.appendChild(right);
+  left.innerHTML = '<div class="dhead">除 2 取余（从上往下算）</div>';
+
+  if(fast){
+    for(var r = 0; r < rows.length; r++){
+      left.innerHTML += '<div class="drow"><span class="a">' + rows[r][0] + '</span> ÷ 2 = ' +
+        rows[r][1] + ' …… 余 <span class="r">' + rows[r][2] + '</span></div>';
+    }
+  }else{
+    for(var r2 = 0; r2 < rows.length; r2++){
+      var row = document.createElement('div');
+      row.className = 'drow';
+      row.innerHTML = '<span class="a">' + rows[r2][0] + '</span> ÷ 2 = ' +
+        rows[r2][1] + ' …… 余 <span class="r">' + rows[r2][2] + '</span>';
+      left.appendChild(row);
+      await sleep(speed * 0.6);
+    }
+  }
+
+  right.innerHTML = '<div class="dhead">余数倒序读（从下往上 ↑）</div>';
+  var stack = document.createElement('div');
+  stack.className = 'rstack';
+  right.appendChild(stack);
+  var seq = (function(){
+    var s = [];
+    for(var i = 7; i >= 0; i--) s.push(res[i]);
+    return s;
+  })();
+  for(var s2 = 0; s2 < 8; s2++){
+    var sp = document.createElement('span');
+    sp.textContent = seq[s2];
+    stack.appendChild(sp);
+    if(!fast) await sleep(speed * 0.35);
+  }
+
+  var line = document.createElement('div');
+  line.className = 'resultLine';
+  line.textContent = '结果：' + n + '₁₀ = ' + binGroup().replace(' ','') + '₂（8 位补齐）';
+  right.appendChild(line);
+
+  // 灯泡逐位点亮
+  for(var k = 7; k >= 0; k--){
+    bits[k] = res[k];
+    render();
+    if(!fast) await sleep(speed * 0.25);
+  }
+  logAdd('余数倒序排列得：' + binStr() + '₂，校验：' + expandText(), 'ok');
+}
+
+/* ============ 随堂小练 ============ */
+var quiz = null;
+function newQuiz(){
+  var types = ['d2b','b2d','weight','count','max','expand'];
+  var type = types[Math.floor(Math.random() * types.length)];
+  var n, k;
+  if(type === 'd2b'){
+    n = Math.floor(Math.random() * 256);
+    quiz = { type:type, q:'把十进制 ' + n + ' 转换成二进制（8 位）：', ans:pad8(n), n:n,
+      ana:'除 2 取余倒序读数，或凑位权：' + n + ' = ' + expandOf(n) };
+  }else if(type === 'b2d'){
+    n = 1 + Math.floor(Math.random() * 255);
+    quiz = { type:type, q:'把二进制 ' + pad8(n) + ' 转换成十进制：', ans:String(n), n:n,
+      ana:'按权展开相加：' + expandOf(n) };
+  }else if(type === 'weight'){
+    k = 1 + Math.floor(Math.random() * 8);
+    quiz = { type:type, q:'8 位二进制中，从右往左第 ' + k + ' 位的位权是多少？', ans:String(1 << (k - 1)),
+      ana:'第 n 位位权 = 2ⁿ⁻¹，第 ' + k + ' 位 = 2^' + (k - 1) + ' = ' + (1 << (k - 1)) };
+  }else if(type === 'count'){
+    quiz = { type:type, q:'8 位二进制一共能表示多少种不同的状态（多少个不同的数）？', ans:'256',
+      ana:'2⁸ = 256 种状态，对应十进制 0 – 255。' };
+  }else if(type === 'max'){
+    quiz = { type:type, q:'8 位二进制能表示的最大十进制数是多少？', ans:'255',
+      ana:'全部 8 位都为 1：11111111₂ = 128+64+32+16+8+4+2+1 = 255。' };
+  }else{
+    n = 1 + Math.floor(Math.random() * 255);
+    quiz = { type:type, q:'二进制 ' + pad8(n) + ' 中，值为 1 的位权之和是多少（即十进制值）？', ans:String(n),
+      ana:expandOf(n) };
+  }
+  $('qText').textContent = quiz.q;
+  $('qInput').value = '';
+  $('qFb').textContent = ''; $('qFb').className = 'q-fb';
+  $('qAna').textContent = '';
+  $('qInput').focus();
+}
+function pad8(n){
+  var s = '';
+  for(var i = 7; i >= 0; i--) s += ((n >> i) & 1);
+  return s;
+}
+function expandOf(n){
+  var t = [], v = 0;
+  for(var i = 7; i >= 0; i--) if((n >> i) & 1){ t.push(1 << i); v += (1 << i); }
+  return t.join(' + ') + ' = ' + v;
+}
+function checkQuiz(){
+  if(!quiz) return;
+  var a = $('qInput').value.trim().replace(/\s+/g,'');
+  if(a === ''){ $('qFb').textContent = '请先输入答案'; $('qFb').className = 'q-fb no'; return; }
+  var ok = false;
+  if(quiz.type === 'd2b'){
+    ok = /^[01]+$/.test(a) && parseInt(a, 2) === quiz.n;
+  }else{
+    ok = (a === quiz.ans);
+  }
+  $('qFb').textContent = ok ? '✔ 正确！' : '✘ 不正确，正确答案是：' + quiz.ans;
+  $('qFb').className = 'q-fb ' + (ok ? 'ok' : 'no');
+  $('qAna').textContent = quiz.ana;
+}
+
+/* ============ 事件绑定 ============ */
+$('btnDemo').addEventListener('click', function(){ classDemo(); });
+$('btnPlus').addEventListener('click', function(){ stopAll(); doPlus(); });
+$('btnMinus').addEventListener('click', function(){ stopAll(); doMinus(); });
+$('btnZero').addEventListener('click', function(){
+  stopAll(); setVal(0); logClear();
+  logAdd('全部清零：00000000₂ = 0₁₀', 'info');
+});
+$('btnMax').addEventListener('click', function(){
+  stopAll(); setVal(255); logClear();
+  logAdd('全部点亮：11111111₂ = 255₁₀（8 位最大值）', 'info');
+  logAdd('再加 1 会怎样？试试「＋1 进位演示」看溢出。', 'carry');
+});
+$('btnRand').addEventListener('click', function(){
+  stopAll(); var n = Math.floor(Math.random() * 256); setVal(n); logClear();
+  logAdd('随机值：' + binStr() + '₂ = ' + n + '₁₀', 'info');
+  logAdd('按权展开：' + expandText(), 'ok');
+});
+$('btnAuto').addEventListener('click', function(){
+  if(auto){ stopAll(); return; }
+  auto = true;
+  this.textContent = '⏸ 暂停';
+  this.classList.add('on');
+  autoRun();
+});
+var segs = document.querySelectorAll('.seg button');
+for(var s = 0; s < segs.length; s++){
+  segs[s].addEventListener('click', function(){
+    for(var j = 0; j < segs.length; j++) segs[j].classList.remove('on');
+    this.classList.add('on');
+    speed = parseInt(this.dataset.sp, 10);
+  });
+}
+$('btnConv').addEventListener('click', function(){ convertDemo(false); });
+$('btnFast').addEventListener('click', function(){ convertDemo(true); });
+$('decInput').addEventListener('keydown', function(e){ if(e.key === 'Enter') convertDemo(false); });
+
+$('qCheck').addEventListener('click', checkQuiz);
+$('qNext').addEventListener('click', newQuiz);
+$('qAns').addEventListener('click', function(){
+  if(!quiz) return;
+  $('qFb').textContent = '答案：' + quiz.ans;
+  $('qFb').className = 'q-fb';
+  $('qAna').textContent = quiz.ana;
+});
+$('qInput').addEventListener('keydown', function(e){ if(e.key === 'Enter') checkQuiz(); });
+
+$('btnTheme').addEventListener('click', function(){
+  var light = document.body.dataset.theme === 'light';
+  document.body.dataset.theme = light ? 'dark' : 'light';
+  this.textContent = light ? '◐ 白底模式' : '◑ 深色模式';
+});
+$('btnFull').addEventListener('click', function(){
+  if(document.fullscreenElement){ document.exitFullscreen(); }
+  else if(document.documentElement.requestFullscreen){ document.documentElement.requestFullscreen(); }
+});
+
+document.addEventListener('keydown', function(e){
+  if(e.target.tagName === 'INPUT') return;
+  if(e.code === 'Space' || e.key === 'ArrowRight'){ e.preventDefault(); stopAll(); doPlus(); }
+  else if(e.key === 'ArrowLeft'){ stopAll(); doMinus(); }
+  else if(e.key === '0'){ stopAll(); setVal(0); }
+  else if(e.key === 'a' || e.key === 'A'){ $('btnAuto').click(); }
+});
+
+/* ============ 初始化 ============ */
+render();
+newQuiz();
+setVal(0);
+</script>
+</body>
+</html>
